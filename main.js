@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const db = require("./database/db");
 const XLSX = require("xlsx");
@@ -491,6 +491,40 @@ ipcMain.handle("stats:expiringSoon", async () => {
     ORDER BY membership.end_date ASC
   `);
 });
+
+// open browser external lewat shellscript
+// main.js
+let waWindow = null;
+
+ipcMain.on("open-external", (event, url) => {
+  if (waWindow && !waWindow.isDestroyed()) {
+    waWindow.focus();
+    waWindow.loadURL(url);
+    return;
+  }
+
+  waWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    title: "WhatsApp Web",
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    }
+  });
+
+  waWindow.loadURL(url); // url = https://wa.me/...
+
+  waWindow.on("closed", () => {
+    waWindow = null;
+  });
+});
+
+// ipcMain.on("open-external", (event, url) => { // kode lama 
+//   shell.openExternal(url);
+// });
+
+app.commandLine.appendSwitch("lang", "id-ID");
 
 // if close app => also stop program ketika sedang running
 app.on("window-all-closed", () => {

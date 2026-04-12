@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, shell } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
   // EXIT APP
@@ -53,4 +53,9 @@ contextBridge.exposeInMainWorld("api", {
 
   // --- MEMBER YANG MAU HABIS MASA AKTIF ---
   getExpiringSoon: () => ipcRenderer.invoke("stats:expiringSoon"),
+});
+
+// open Whatsapp
+contextBridge.exposeInMainWorld("wa", {
+  open: (url) => ipcRenderer.send("open-external", url),
 });

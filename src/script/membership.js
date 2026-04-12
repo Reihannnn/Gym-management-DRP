@@ -125,7 +125,34 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("yearFilter").addEventListener("change", () => {
     loadMembershipTable();
   });
+
+  document
+    .getElementById("expire-soon-member")
+    .addEventListener("click", () => {
+      loadMembershipTableExpiringSooon();
+    });
 });
+
+function loadMembershipTableExpiringSooon() {
+  const tableBody = document.getElementById("memberTable");
+
+  const filtered = cachedMembershipRows.filter((r) =>
+    r.rowHtml.includes("bg-yellow"),
+  );
+
+  if (filtered.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="13" class="text-center py-4 text-gray-500">
+          Tidak ada member yang expiring dalam 5 hari
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tableBody.innerHTML = filtered.map((r) => `<tr>${r.rowHtml}</tr>`).join("");
+}
 
 async function loadMembershipTable() {
   const selectedYear = document.getElementById("yearFilter").value;
@@ -185,18 +212,36 @@ async function loadMembershipTable() {
       };
     });
 
+    // mengubah nomer whatapp dari 0895 menjadi => 62895
+    const noWhatsappMember = `62` + member.no_telp.substring(1);
+
+    const lastMembership =
+      memberships.length > 0
+        ? memberships[memberships.length - 1].end_date
+        : "";
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td class="text-center font-semibold">${member.nama}</td>
+      <td class="text-center font-semibold flex justify-between">
+        <h1 style= "margin-left:20px; ">${member.nama}</h1> 
+        <div style="margin-right : 18px;">
+          <i class="fa-brands fa-whatsapp hover:cursor-pointer whatsapp" id="whatsapp_member" 
+             data-phone = "${noWhatsappMember}"
+             data-name = "${member.nama}"
+             data-tanggalhabis = "${lastMembership}" 
+             >
+          </i>
+        </div>
+      </td>
+      
       ${months
         .map(
           (m) => `
         <td class="px-2 text-center py-2 ${monthMap[m].color}">
           ${monthMap[m].text}
-        </td>`
+          </td>`,
         )
         .join("")}
-    `;
+        `;
 
     cachedMembershipRows.push({
       name: member.nama.toLowerCase(),
@@ -236,7 +281,7 @@ async function loadMembershipTable() {
       .map(
         (m) => `
       <td class="text-center py-2">${totals[m]}</td>
-    `
+    `,
       )
       .join("")}
   `;
@@ -260,7 +305,7 @@ async function getAllMembership() {
 // ===============================
 function initSearchHandler() {
   const input = document.querySelector(
-    'input[placeholder="Cari membership..."]'
+    'input[placeholder="Cari membership..."]',
   );
   if (!input) return;
 
@@ -278,7 +323,7 @@ function initSearchHandler() {
 
     // Filter berdasarkan nama
     const filtered = cachedMembershipRows.filter((r) =>
-      r.name.includes(search)
+      r.name.includes(search),
     );
 
     // Render hasil filter
@@ -296,3 +341,30 @@ function initSearchHandler() {
     }
   });
 }
+
+// template pesan whatsapp
+const templateMessageWhatsapp = (name, tanggal_habis) => {
+return `Halo ${name},
+
+Kami ingin mengingatkan bahwa membership Anda akan berakhir pada ${tanggal_habis}.
+
+Silahkan perpanjang membership Anda agar progress latihan tetap konsisten dan tidak terputus.  
+Tetap semangat menuju tubuh yang lebih sehat dan kuat
+
+Salam hangat,  
+Admin DRP Gym Cibitung`;
+};
+
+document.getElementById("memberTable").addEventListener("click", (e) => {
+  if (e.target.classList.contains("whatsapp")) {
+    const phone = e.target.dataset.phone;
+    const name = e.target.dataset.name;
+    const tanggal_habis = e.target.dataset.tanggalhabis;
+
+    const msg = templateMessageWhatsapp(name, tanggal_habis);
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+
+    console.log(url);
+    window.wa.open(url);
+  }
+});

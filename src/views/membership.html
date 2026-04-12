@@ -57,6 +57,11 @@
         display: flex;
         gap: 1rem;
       }
+
+      .whatsapp:hover{
+        color: rgba(15, 186, 3, 0.808);
+        font-size: 1.25rem;
+      }
     </style>
   </head>
 
@@ -99,7 +104,7 @@
                     class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                   <i
-                    class="fas fa-search absolute left-3 top-3 text-gray-400"
+                  class="fas fa-search absolute left-3 top-3 text-gray-400"
                   ></i>
                 </div>
                 <!-- FILTER TAHUN -->
@@ -110,6 +115,11 @@
                   <option value="2029">2029</option>
                   <option value="2030">2030</option>
                 </select>
+                <button id="expire-soon-member" class="flex items-center  border px-3 py-2 rounded-lg bg-yellow  hover:cursor-pointer">
+                  <i class="fa-solid fa-triangle-exclamation" style="margin:2.5px 5px 0px 0px ;"></i>
+                  <h1 class="font-semibold" >Expiring Soon</h1>
+                </button>
+
               </div>
             </div>
             <br>
@@ -146,6 +156,11 @@
                 >
                   Nama
                 </th>
+                <!-- <th
+                  class="py-2 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                >
+                 HUBUNGI
+                </th> -->
                 <th
                   class="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider"
                 >
