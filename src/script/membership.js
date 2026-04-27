@@ -212,13 +212,16 @@ async function loadMembershipTable() {
       };
     });
 
+    console.log("===tes123===")
+    console.log(memberships)
+
     // mengubah nomer whatapp dari 0895 menjadi => 62895
     const noWhatsappMember = `62` + member.no_telp.substring(1);
 
     const lastMembership =
       memberships.length > 0
-        ? memberships[memberships.length - 1].end_date
-        : "";
+        ? memberships[0].end_date
+        : null
     const row = document.createElement("tr");
     row.innerHTML = `
       <td class="text-center font-semibold flex justify-between">
@@ -227,7 +230,7 @@ async function loadMembershipTable() {
           <i class="fa-brands fa-whatsapp hover:cursor-pointer whatsapp" id="whatsapp_member" 
              data-phone = "${noWhatsappMember}"
              data-name = "${member.nama}"
-             data-tanggalhabis = "${lastMembership}" 
+             data-tanggalhabis = "${lastMembership}"
              >
           </i>
         </div>
@@ -344,9 +347,9 @@ function initSearchHandler() {
 
 // template pesan whatsapp
 const templateMessageWhatsapp = (name, tanggal_habis) => {
-return `Halo ${name},
+  return `Halo ${name},
 
-Kami ingin mengingatkan bahwa membership Anda akan berakhir pada ${tanggal_habis}.
+Kami ingin mengingatkan bahwa membership Anda akan berakhir pada *${tanggal_habis}*.
 
 Silahkan perpanjang membership Anda agar progress latihan tetap konsisten dan tidak terputus.  
 Tetap semangat menuju tubuh yang lebih sehat dan kuat
