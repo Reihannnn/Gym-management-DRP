@@ -212,16 +212,12 @@ async function loadMembershipTable() {
       };
     });
 
-    console.log("===tes123===")
-    console.log(memberships)
-
     // mengubah nomer whatapp dari 0895 menjadi => 62895
     const noWhatsappMember = `62` + member.no_telp.substring(1);
 
     const lastMembership =
-      memberships.length > 0
-        ? memberships[0].end_date
-        : null
+      memberships.length > 0 ? memberships[0].end_date : null;
+
     const row = document.createElement("tr");
     row.innerHTML = `
       <td class="text-center font-semibold flex justify-between">
@@ -300,7 +296,7 @@ function formatDate(dateObj) {
 
 async function getAllMembership() {
   const members = await window.api.getAllMembership();
-  console.table(members);
+  // console.table(members);
 }
 
 // ===============================
@@ -347,9 +343,15 @@ function initSearchHandler() {
 
 // template pesan whatsapp
 const templateMessageWhatsapp = (name, tanggal_habis) => {
+  const formattedDate = new Date(tanggal_habis).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   return `Halo ${name},
 
-Kami ingin mengingatkan bahwa membership Anda akan berakhir pada *${tanggal_habis}*.
+Kami ingin mengingatkan bahwa membership Anda berakhir pada *${formattedDate}*.
 
 Silahkan perpanjang membership Anda agar progress latihan tetap konsisten dan tidak terputus.  
 Tetap semangat menuju tubuh yang lebih sehat dan kuat
@@ -363,11 +365,17 @@ document.getElementById("memberTable").addEventListener("click", (e) => {
     const phone = e.target.dataset.phone;
     const name = e.target.dataset.name;
     const tanggal_habis = e.target.dataset.tanggalhabis;
+    const formattedDate = new Date(tanggal_habis).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+    console.log(formattedDate);
 
     const msg = templateMessageWhatsapp(name, tanggal_habis);
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 
-    console.log(url);
     window.wa.open(url);
   }
 });
