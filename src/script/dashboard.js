@@ -4,7 +4,23 @@ document.addEventListener("DOMContentLoaded", function () {
   showGrowthRateMembership();
   showExpiringSoon();
   countTotalMember();
+  showTotalMembershipPeriode25();
+  loadTotalMembership();
   // showActiveThisMonth();
+
+  const btnExport = document.getElementById("btnExportMembership");
+
+  btnExport.addEventListener("click", async () => {
+    btnExport.disabled = true;
+    btnExport.innerText = "Exporting...";
+
+    const result = await window.api.exportMembershipExcelPeriode25();
+
+    alert("Excel Berhasil dibuat")
+
+    btnExport.disabled = false;
+    btnExport.innerText = "Print Excel";
+  });
 });
 
 // 1. HITUNG MEMBER AKTIF & NON AKTIF
@@ -133,8 +149,8 @@ async function countTotalMember() {
 async function showGrowthRateMembership() {
   const membership = await window.api.getAllMembership();
 
-  console.log("asdasda")
-  console.log(membership)
+  console.log("asdasda");
+  console.log(membership);
 
   const badgeSuccess = document.querySelector(".badge-success-membership");
   const badgeWarning = document.querySelector(".badge-warning-membership");
@@ -170,9 +186,8 @@ async function showGrowthRateMembership() {
   }
 
   // === Masukkan ke elemen HTML ===
-  document.getElementById(
-    "membership-growth-rate"
-  ).innerText = `${growth.toFixed(1)}%`;
+  document.getElementById("membership-growth-rate").innerText =
+    `${growth.toFixed(1)}%`;
   document.getElementById("membership-monthNow").innerText = membershipBulanIni;
   document.getElementById("membership-lastMonth").innerText =
     membershipBulanLalu;
@@ -186,5 +201,32 @@ async function showGrowthRateMembership() {
     badgeSuccess.classList.remove("hidden");
   } else if (growth < 0) {
     badgeWarning.classList.remove("hidden");
+  }
+}
+
+// FUNGSI MENGAMBIL MEMBERSHIP PERTANGGAL 25 - 25 BERIKUTNYA
+async function showTotalMembershipPeriode25() {
+  const result = await window.api.getTotalMembershipPeriode25();
+
+  if (!result.success) return;
+
+  document.querySelector(".this-month").innerText =
+    result.monthLabel.charAt(0).toUpperCase() + result.monthLabel.slice(1);
+
+  document.getElementById("total-membership-this-month").innerText =
+    result.total + " ";
+
+  document.querySelector(".stat-detail").innerText =
+    `${result.start} s/d ${result.end}`;
+}
+
+async function loadTotalMembership() {
+  const result = await window.api.getTotalMembership();
+
+  if (result.success) {
+    document.getElementById("totalMembership").innerText = result.total;
+
+    document.getElementById("periodeMembership").innerText =
+      `${result.start} s/d ${result.end}`;
   }
 }

@@ -218,6 +218,8 @@ async function loadMembershipTable() {
     const lastMembership =
       memberships.length > 0 ? memberships[0].end_date : null;
 
+      console.log(memberships)
+
     const row = document.createElement("tr");
     row.innerHTML = `
       <td class="text-center font-semibold flex justify-between">

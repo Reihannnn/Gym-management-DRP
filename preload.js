@@ -53,6 +53,13 @@ contextBridge.exposeInMainWorld("api", {
 
   // --- MEMBER YANG MAU HABIS MASA AKTIF ---
   getExpiringSoon: () => ipcRenderer.invoke("stats:expiringSoon"),
+  // --- AMBIL MEMBERSHIP DARI TANGGAL 25 SAMPAI TANGGAL 25 BULAN DEPAN : CONTOH 25 APRIL - 25 MEI
+  getTotalMembershipPeriode25: () =>
+    ipcRenderer.invoke("membership:getTotalPeriode25"),
+  
+  // --- PRINT MEMBERSHIP DARI TANGGAL 25 SAMPAI TANGGAL 25 BULAN DEPAN : CONTOH 25 APRIL - 25 MEI
+  exportMembershipExcelPeriode25: () =>
+    ipcRenderer.invoke("membership:exportPeriode25Excel"),
 });
 
 // open Whatsapp

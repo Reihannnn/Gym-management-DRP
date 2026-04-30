@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -82,7 +82,8 @@
         background: white;
         border-radius: 1rem;
         padding: 1.5rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.1),
           0 2px 4px -1px rgba(0, 0, 0, 0.06);
         transition: all 0.3s ease;
         position: relative;
@@ -104,7 +105,8 @@
 
       .stat-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        box-shadow:
+          0 20px 25px -5px rgba(0, 0, 0, 0.1),
           0 10px 10px -5px rgba(0, 0, 0, 0.04);
       }
 
@@ -239,7 +241,7 @@
         background-color: #fef3c7;
         color: #92400e;
       }
-      
+
       .badge-warning {
         background-color: #fef3c7;
         color: #92400e;
@@ -333,6 +335,27 @@
         font-size: 2rem;
         font-weight: bold;
       }
+      .stat-membership {
+        font-size: 1.7rem;
+        font-weight: bold;
+      }
+
+      #btnExportMembership{
+        padding: 8px 15px 8px 15px;  
+        margin-top: 10px;      
+        background-color:  #38f988;
+        color: #02742c;
+        font-weight: bold;
+        border-radius: 10px;
+      }
+
+      #btnExportMembership:hover{
+        cursor: pointer;
+        background-color:  #2ecc70;            
+      }
+      .this-month{
+        font-weight: bold;      
+      }
     </style>
   </head>
   <body class="main">
@@ -373,8 +396,7 @@
             </div>
           </div>
         </div>
-        
-        
+
         <!-- Growth members track-->
         <div class="stat-card">
           <div class="stat-header">
@@ -395,14 +417,11 @@
               Negative
             </span>
           </div>
-          <br>
+          <br />
           <p>Member baru bulan ini : <span id="member-monthNow"></span></p>
-          <p>
-            Member baru bulan lalu : <span id="member-lastMonth"></span>
-          </p>
+          <p>Member baru bulan lalu : <span id="member-lastMonth"></span></p>
         </div>
 
-        
         <!-- Growth membership track-->
         <div class="stat-card">
           <div class="stat-header">
@@ -424,7 +443,7 @@
               Negative
             </span>
           </div>
-            <br>
+          <br />
           <p>
             Membership baru bulan ini : <span id="membership-monthNow"></span>
           </p>
@@ -463,6 +482,24 @@
           <div class="stat-detail"></div>
         </div>
 
+        <!-- total membership bulan ini  -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <div>
+              <span class="stat-label">Total Membership Bulan </span>
+              <span class="this-month"></span>
+              <p></p>
+            </div>
+            <div class="icon-wrapper">
+              <i class="fas fa-users"></i>
+            </div>
+          </div>
+          <div class="stat-membership">
+            <span id="total-membership-this-month"></span>Membership
+          </div>
+          <div class="stat-detail"></div>
+          <button id="btnExportMembership">Print Excel</button>
+        </div>
       </div>
     </main>
 

@@ -52,7 +52,7 @@ async function autoUpdateAllMemberStatus() {
       `SELECT end_date FROM membership 
        WHERE member_id=? 
        ORDER BY date(end_date) DESC LIMIT 1`,
-      [m.id]
+      [m.id],
     );
 
     let newStatus = "Non Active";
@@ -80,7 +80,7 @@ ipcMain.handle("member:add", async (event, data) => {
   return await db.runAsync(
     `INSERT INTO member (nama, alamat, status, no_telp)
     VALUES (?, ?, ?, ?)`,
-    [data.nama, data.alamat, data.status, data.no_telp]
+    [data.nama, data.alamat, data.status, data.no_telp],
   );
 });
 
@@ -91,10 +91,7 @@ ipcMain.handle("member:list", async () => {
 
 // GET / READ  BY ONE ID
 ipcMain.handle("member:getById", async (event, id) => {
-  return await db.getAsync(
-    `SELECT * FROM member WHERE id = ?`,
-    [id]
-  );
+  return await db.getAsync(`SELECT * FROM member WHERE id = ?`, [id]);
 });
 
 // UPDATE MEMBER
@@ -103,15 +100,9 @@ ipcMain.handle("member:update", async (event, data) => {
     `UPDATE member 
      SET nama = ?, alamat = ?, no_telp = ?
      WHERE id = ?`,
-    [
-      data.nama,
-      data.alamat,
-      data.no_telp,
-      data.id
-    ]
+    [data.nama, data.alamat, data.no_telp, data.id],
   );
 });
-
 
 // UPDATE STATUS MEMBER
 ipcMain.handle("member:autoUpdateAll", autoUpdateAllMemberStatus);
@@ -139,7 +130,7 @@ ipcMain.handle("membership:add", async (event, data) => {
     const membership = await db.runAsync(
       `INSERT INTO membership (member_id, start_date, end_date)
        VALUES (?, ?, ?)`,
-      [data.member_id, data.start_date, data.end_date]
+      [data.member_id, data.start_date, data.end_date],
     );
 
     // Auto income
@@ -169,12 +160,11 @@ ipcMain.handle("membership:list", async () => {
 ipcMain.handle("membership:listByMember", async (event, member_id) => {
   return await db.allAsync(
     `SELECT * FROM membership WHERE member_id=? ORDER BY id DESC`,
-    [member_id]
+    [member_id],
   );
 });
 
-
-// GET / READ  MEMBERSHIP BY ID 
+// GET / READ  MEMBERSHIP BY ID
 ipcMain.handle("membership:getById", async (event, id) => {
   return await db.getAsync("SELECT * FROM membership WHERE id = ?", [id]);
 });
@@ -196,7 +186,7 @@ ipcMain.handle("getAllMembershipWithName:list", (event) => {
       (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
-      }
+      },
     );
   });
 });
@@ -205,7 +195,7 @@ ipcMain.handle("getAllMembershipWithName:list", (event) => {
 ipcMain.handle("membership:update", async (event, data) => {
   return await db.runAsync(
     `UPDATE membership SET start_date=?, end_date=? WHERE id=?`,
-    [data.start_date, data.end_date, data.id]
+    [data.start_date, data.end_date, data.id],
   );
 });
 
@@ -233,7 +223,7 @@ ipcMain.handle("search-member", (event, keyword) => {
       (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
-      }
+      },
     );
   });
 });
@@ -303,7 +293,7 @@ ipcMain.handle("print-membership-excel", async (event, year) => {
 
   const filePath = path.join(
     process.env.HOME || process.env.USERPROFILE,
-    `Membership-${year}.xlsx`
+    `Membership-${year}.xlsx`,
   );
   XLSX.writeFile(wb, filePath);
 
@@ -340,8 +330,19 @@ ipcMain.handle("print-membership-pdf", async (event, { year, tableData }) => {
 
     // Header
     const headers = [
-      "Nama", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Des",
+      "Nama",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Des",
     ];
 
     let x = marginX;
@@ -421,7 +422,6 @@ ipcMain.handle("print-membership-pdf", async (event, { year, tableData }) => {
     fs.writeFileSync(savePath, pdfBytes);
 
     return true;
-
   } catch (err) {
     console.error("Error PDF:", err);
     return false;
@@ -429,37 +429,55 @@ ipcMain.handle("print-membership-pdf", async (event, { year, tableData }) => {
 });
 
 //print excel membership data
-ipcMain.handle("export-membership-excel", async (event, { year, tableData }) => {
-  try {
-    const workbook = XLSX.utils.book_new();
+ipcMain.handle(
+  "export-membership-excel",
+  async (event, { year, tableData }) => {
+    try {
+      const workbook = XLSX.utils.book_new();
 
-    const worksheet = XLSX.utils.aoa_to_sheet([
-      ["Nama", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"],
-      ...tableData
-    ]);
+      const worksheet = XLSX.utils.aoa_to_sheet([
+        [
+          "Nama",
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "Mei",
+          "Jun",
+          "Jul",
+          "Ags",
+          "Sep",
+          "Okt",
+          "Nov",
+          "Des",
+        ],
+        ...tableData,
+      ]);
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Membership");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Membership");
 
-    const savePath = dialog.showSaveDialogSync({
-      title: "Save Membership Excel",
-      defaultPath: `Membership-${year}.xlsx`,
-      filters: [{ name: "Excel File", extensions: ["xlsx"] }],
-    });
+      const savePath = dialog.showSaveDialogSync({
+        title: "Save Membership Excel",
+        defaultPath: `Membership-${year}.xlsx`,
+        filters: [{ name: "Excel File", extensions: ["xlsx"] }],
+      });
 
-    if (!savePath) return false;
+      if (!savePath) return false;
 
-    XLSX.writeFile(workbook, savePath);
+      XLSX.writeFile(workbook, savePath);
 
-    return true;
-  } catch (err) {
-    console.error("Error Excel:", err);
-    return false;
-  }
-});
+      return true;
+    } catch (err) {
+      console.error("Error Excel:", err);
+      return false;
+    }
+  },
+);
 
-//dashboard KPI analisa dasar 
+//dashboard KPI analisa dasar
 ipcMain.handle("stats:membershipPerMonth", async (event, { year }) => {
-  const rows = await db.allAsync(`
+  const rows = await db.allAsync(
+    `
     SELECT 
       strftime('%m', start_date) AS month,
       COUNT(*) AS total
@@ -467,7 +485,9 @@ ipcMain.handle("stats:membershipPerMonth", async (event, { year }) => {
     WHERE strftime('%Y', start_date) = ?
     GROUP BY month
     ORDER BY month ASC
-  `, [year]);
+  `,
+    [year],
+  );
 
   return rows;
 });
@@ -510,7 +530,7 @@ ipcMain.on("open-external", (event, url) => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-    }
+    },
   });
 
   waWindow.loadURL(url); // url = https://wa.me/...
@@ -520,12 +540,220 @@ ipcMain.on("open-external", (event, url) => {
   });
 });
 
-// ipcMain.on("open-external", (event, url) => { // kode lama 
+// Ambil total membership periode tgl 25 -> 25 berikutnya
+ipcMain.handle("membership:getTotalPeriode25", async () => {
+  try {
+    const now = new Date();
+
+    const currentDay = now.getDate();
+
+    let periodeMonth;
+    let periodeYear;
+
+    // ===============================
+    // RULE:
+    // tanggal 25 - akhir bulan = bulan berikutnya
+    // tanggal 1 - 24 = bulan sekarang
+    // ===============================
+
+    if (currentDay >= 25) {
+      periodeMonth = now.getMonth() + 1; // next month
+      periodeYear = now.getFullYear();
+
+      // kalau desember +1 => januari tahun depan
+      if (periodeMonth > 11) {
+        periodeMonth = 0;
+        periodeYear += 1;
+      }
+    } else {
+      periodeMonth = now.getMonth(); // current month
+      periodeYear = now.getFullYear();
+    }
+
+    // contoh:
+    // April 2026 =>
+    // start = 25 Maret 2026
+    // end   = 25 April 2026
+
+    const startDate = new Date(periodeYear, periodeMonth - 1, 25);
+    const endDate = new Date(periodeYear, periodeMonth, 25);
+
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    };
+
+    const start = formatDate(startDate);
+    const end = formatDate(endDate);
+
+    const total = await new Promise((resolve, reject) => {
+      db.get(
+        `
+        SELECT COUNT(*) as total
+        FROM membership
+        WHERE DATE(start_date) >= DATE(?)
+        AND DATE(start_date) < DATE(?)
+        `,
+        [start, end],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row.total);
+        },
+      );
+    });
+
+    const monthLabel = new Date(periodeYear, periodeMonth, 1).toLocaleString(
+      "id-ID",
+      {
+        month: "long",
+        year: "numeric",
+      },
+    );
+
+    return {
+      success: true,
+      total,
+      start,
+      end,
+      monthLabel,
+    };
+  } catch (error) {
+    console.log(error);
+
+    return {
+      success: false,
+      total: 0,
+    };
+  }
+});
+
+// download excel rentang membership bulan ini dari tanggal 25 - 25
+ipcMain.handle("membership:exportPeriode25Excel", async () => {
+  try {
+    const now = new Date();
+    const currentDay = now.getDate();
+
+    let periodeMonth;
+    let periodeYear;
+
+    // ===============================
+    // RULE:
+    // tanggal 25 - akhir bulan = bulan berikutnya
+    // tanggal 1 - 24 = bulan sekarang
+    // ===============================
+    if (currentDay >= 25) {
+      periodeMonth = now.getMonth() + 1; // next month
+      periodeYear = now.getFullYear();
+
+      // kalau desember -> januari tahun depan
+      if (periodeMonth > 11) {
+        periodeMonth = 0;
+        periodeYear += 1;
+      }
+    } else {
+      periodeMonth = now.getMonth(); // current month
+      periodeYear = now.getFullYear();
+    }
+
+    // ======================================
+    // CONTOH:
+    // Label April 2026
+    // start = 25 Maret 2026
+    // end   = 25 April 2026
+    // ======================================
+    const startDate = new Date(periodeYear, periodeMonth - 1, 25);
+    const endDate = new Date(periodeYear, periodeMonth, 25);
+
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    };
+
+    const start = formatDate(startDate);
+    const end = formatDate(endDate);
+
+    // label bulan laporan
+    const monthLabel = new Date(periodeYear, periodeMonth, 1).toLocaleString(
+      "id-ID",
+      {
+        month: "long",
+        year: "numeric",
+      },
+    );
+
+    // ===============================
+    // QUERY DATA
+    // ===============================
+    const rows = await new Promise((resolve, reject) => {
+      db.all(
+        `
+        SELECT 
+          member.nama,
+          membership.start_date
+        FROM membership
+        JOIN member 
+          ON member.id = membership.member_id
+        WHERE DATE(membership.start_date) >= DATE(?)
+        AND DATE(membership.start_date) < DATE(?)
+        ORDER BY membership.start_date ASC
+        `,
+        [start, end],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        },
+      );
+    });
+
+    // ===============================
+    // DATA EXCEL
+    // ===============================
+    const excelData = [
+      [`Laporan Membership ${monthLabel}`],
+      [`Periode ${start} s/d ${end}`],
+      [],
+      ["No", "Nama", "Tanggal Mulai"],
+      ...rows.map((item, index) => [index + 1, item.nama, item.start_date]),
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+
+    // lebar kolom
+    worksheet["!cols"] = [{ wch: 8 }, { wch: 30 }, { wch: 18 }];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Membership");
+
+    // ===============================
+    // SAVE FILE
+    // ===============================
+    const savePath = dialog.showSaveDialogSync({
+      title: "Save Membership Excel",
+      defaultPath: `Membership-${monthLabel}.xlsx`,
+      filters: [{ name: "Excel File", extensions: ["xlsx"] }],
+    });
+
+    if (!savePath) return false;
+
+    XLSX.writeFile(workbook, savePath);
+
+    return true;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+});
+
+// ipcMain.on("open-external", (event, url) => { // kode lama
 //   shell.openExternal(url);
 // });
-
 app.commandLine.appendSwitch("lang", "id-ID");
-
 // if close app => also stop program ketika sedang running
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
