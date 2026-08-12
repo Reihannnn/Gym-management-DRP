@@ -1,8 +1,7 @@
 const sqlite3 = require("sqlite3").verbose();
-const { app } = require("electron");
+const { app } = require("electron")
 const path = require("path");
 const fs = require("fs");
-
 const dbPath = path.join(app.getPath("userData"), "drp-gym-management.db");
 const isNewDatabase = !fs.existsSync(dbPath);
 
@@ -15,33 +14,29 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
   if (isNewDatabase) {
     console.log("Database baru terdeteksi => membuat tabel...");
-    createTables();
+    //fungsi buat table
+    createTables()
   }
 });
 
 // ==================================================================
-// CREATE TABLES
+// CREATE TABLES (hanya jalan ketika DB baru dibuat)
 // ==================================================================
 function createTables() {
   db.serialize(() => {
-    // ==========================================================
-    // MEMBER
-    // ==========================================================
+    // Table member
     db.run(`
       CREATE TABLE IF NOT EXISTS member (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nama TEXT NOT NULL,
         alamat TEXT,
         status TEXT NOT NULL CHECK(status IN ('Active', 'Non Active')),
-        uid_card TEXT UNIQUE,
         create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         no_telp TEXT
       )
     `);
 
-    // ==========================================================
-    // MEMBERSHIP
-    // ==========================================================
+    // Table membership
     db.run(`
       CREATE TABLE IF NOT EXISTS membership (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,56 +48,32 @@ function createTables() {
       )
     `);
 
-    // ==========================================================
-    // ATTENDANCE
-    // ==========================================================
     db.run(`
-      CREATE TABLE IF NOT EXISTS attendance (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        member_id INTEGER NOT NULL,
-        nama TEXT NOT NULL,
-        no_telp TEXT,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-        FOREIGN KEY (member_id)
-            REFERENCES member(id)
-            ON DELETE CASCADE
-      );
-    `);
-
-    // ==========================================================
-    // SENAM
-    // ==========================================================
-    db.run(`
-      CREATE TABLE IF NOT EXISTS senam (
+        CREATE TABLE senam (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        no_handphone TEXT NOT NULL DEFAULT 'N/A',
-        alamat TEXT NOT NULL DEFAULT 'N/A',
+        no_handphone TEXT NOT NULL DEFAULT "N/A", 
+        alamat TEXT NOT NULL DEFAULT "N/A", 
         create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // ==========================================================
-    // BOXING
-    // ==========================================================
+        )
+      `
+    )
     db.run(`
-      CREATE TABLE IF NOT EXISTS boxing (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE boxing (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
         name TEXT NOT NULL,
-        no_handphone TEXT NOT NULL DEFAULT 'N/A',
-        alamat TEXT NOT NULL DEFAULT 'N/A',
+        no_handphone TEXT NOT NULL DEFAULT "N/A",
+        alamat TEXT NOT NULL DEFAULT "N/A",
         pertemuan INTEGER NOT NULL DEFAULT 0,
         create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
+        )
+      `)
     console.log("Semua tabel berhasil dibuat ✔");
   });
 }
 
 // ==================================================================
-// Helper Async
+// Helper untuk query async pakai Promise
 // ==================================================================
 db.runAsync = function (sql, params = []) {
   return new Promise((resolve, reject) => {

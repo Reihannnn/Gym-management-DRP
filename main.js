@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const db = require("./database/db");
+const AttendanceService = require("./service/attendance.service");
+const runMigrations = require("./database/migrations");
 const XLSX = require("xlsx");
 const fs = require("fs");
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
@@ -33,7 +35,8 @@ ipcMain.on("open-page", (event, page) => {
 
 app.commandLine.appendSwitch("disable-features", "AutofillServerCommunication");
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await runMigrations();
   createWindow();
 
   app.on("activate", () => {
@@ -97,10 +100,14 @@ ipcMain.handle("member:getById", async (event, id) => {
 // UPDATE MEMBER
 ipcMain.handle("member:update", async (event, data) => {
   return await db.runAsync(
-    `UPDATE member 
-     SET nama = ?, alamat = ?, no_telp = ?
+    `UPDATE member
+     SET
+        nama = ?,
+        alamat = ?,
+        no_telp = ?,
+        uid_card = ?
      WHERE id = ?`,
-    [data.nama, data.alamat, data.no_telp, data.id],
+    [data.nama, data.alamat, data.no_telp, data.uid_card, data.id],
   );
 });
 
@@ -212,6 +219,270 @@ ipcMain.handle("income:list", async () => {
     LEFT JOIN member ON income.member_id = member.id
     ORDER BY income.id DESC
   `);
+});
+
+// ========= HANDLE CRUD ATTENDANCE =============
+
+// ADD ATTENDANCE
+ipcMain.handle("attendance:add", async (event, data) => {
+  return await db.runAsync(
+    `INSERT INTO attendance (member_id, nama, no_telp)
+     VALUES (?, ?, ?)`,
+    [data.member_id, data.nama, data.no_telp],
+  );
+});
+
+// LIST ALL ATTENDANCE
+ipcMain.handle("attendance:list", async () => {
+  return await db.allAsync(
+    `SELECT *, DATE(created_at) as tanggal, 
+     TIME(created_at) as jam 
+     FROM attendance ORDER BY created_at DESC`
+  );
+});
+
+// GET ATTENDANCE BY DATE (WIB)
+ipcMain.handle("attendance:byDate", async (event, date) => {
+  return await db.allAsync(
+    `SELECT *, DATE(created_at) as tanggal,
+     TIME(created_at) as jam
+     FROM attendance 
+     WHERE DATE(created_at) = DATE(?)
+     ORDER BY created_at DESC`,
+    [date],
+  );
+});
+
+// GET ATTENDANCE BY DATE RANGE (WIB)
+ipcMain.handle(
+  "attendance:byDateRange",
+  async (event, { startDate, endDate }) => {
+    return await db.allAsync(
+      `SELECT *, DATE(created_at) as tanggal,
+       TIME(created_at) as jam
+       FROM attendance 
+       WHERE DATE(created_at) >= DATE(?)
+       AND DATE(created_at) <= DATE(?)
+       ORDER BY created_at DESC`,
+      [startDate, endDate],
+    );
+  },
+);
+
+// DELETE ATTENDANCE
+ipcMain.handle("attendance:delete", async (event, id) => {
+  return await db.runAsync(`DELETE FROM attendance WHERE id=?`, [id]);3132689978
+  
+});
+
+// EXPORT ATTENDANCE TO EXCEL
+ipcMain.handle("attendance:exportExcel", async (event, { data, filter }) => {
+  try {
+    const workbook = XLSX.utils.book_new();
+
+    const worksheetData = [
+      ["Laporan Absensi DRP Gym"],
+      [`Filter: ${filter}`],
+      [],
+      ["No", "Nama", "No Telepon", "Tanggal", "Jam"],
+      ...data.map((item, index) => [
+        index + 1,
+        item.nama,
+        item.no_telp || "-",
+        item.tanggal,
+        item.jam,
+      ]),
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    worksheet["!cols"] = [
+      { wch: 6 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 10 },
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Absensi");
+
+    const savePath = dialog.showSaveDialogSync({
+      title: "Save Absensi Excel",
+      defaultPath: `Absensi-${filter}.xlsx`,
+      filters: [{ name: "Excel File", extensions: ["xlsx"] }],
+    });
+
+    if (!savePath) return false;
+
+    XLSX.writeFile(workbook, savePath);
+    return true;
+  } catch (err) {
+    console.error("Export Excel Error:", err);
+    return false;
+  }
+});
+
+// EXPORT ATTENDANCE TO PDF
+ipcMain.handle("attendance:exportPDF", async (event, { data, filter }) => {
+  try {
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595, 842]); // Portrait A4
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    const marginX = 40;
+    let y = 780;
+
+    // Title
+    page.drawText("Laporan Absensi DRP Gym", {
+      x: marginX,
+      y,
+      size: 22,
+      font: fontBold,
+      color: rgb(0.1, 0.1, 0.1),
+    });
+
+    y -= 30;
+
+    // Subtitle / filter
+    page.drawText(`Filter: ${filter}`, {
+      x: marginX,
+      y,
+      size: 12,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
+    });
+
+    y -= 10;
+
+    // Garis pemisah
+    page.drawLine({
+      start: { x: marginX, y },
+      end: { x: 555, y },
+      thickness: 1,
+      color: rgb(0.8, 0.8, 0.8),
+    });
+
+    y -= 25;
+
+    // Header tabel
+    const colNo = marginX;
+    const colNama = marginX + 40;
+    const colTelp = marginX + 200;
+    const colTanggal = marginX + 320;
+    const colJam = marginX + 440;
+
+    const headers = [
+      { text: "No", x: colNo },
+      { text: "Nama", x: colNama },
+      { text: "No Telp", x: colTelp },
+      { text: "Tanggal", x: colTanggal },
+      { text: "Jam", x: colJam },
+    ];
+
+    // Header background
+    page.drawRectangle({
+      x: marginX,
+      y: y - 22,
+      width: 515,
+      height: 25,
+      color: rgb(0.93, 0.93, 0.93),
+    });
+
+    headers.forEach((h) => {
+      page.drawText(h.text, {
+        x: h.x,
+        y: y - 17,
+        size: 10,
+        font: fontBold,
+        color: rgb(0.2, 0.2, 0.2),
+      });
+    });
+
+    y -= 30;
+
+    // Data rows
+    data.forEach((item, index) => {
+      // Cek jika halaman penuh, buat halaman baru
+      if (y < 60) {
+        page = pdfDoc.addPage([595, 842]);
+        y = 780;
+      }
+
+      const rowData = [
+        { text: String(index + 1), x: colNo },
+        { text: item.nama || "-", x: colNama },
+        { text: item.no_telp || "-", x: colTelp },
+        { text: item.tanggal || "-", x: colTanggal },
+        { text: item.jam || "-", x: colJam },
+      ];
+
+      // Alternating row color
+      if (index % 2 === 0) {
+        page.drawRectangle({
+          x: marginX,
+          y: y - 18,
+          width: 515,
+          height: 20,
+          color: rgb(0.97, 0.97, 0.97),
+        });
+      }
+
+      // Garis bawah baris
+      page.drawLine({
+        start: { x: marginX, y: y - 20 },
+        end: { x: 555, y: y - 20 },
+        thickness: 0.5,
+        color: rgb(0.9, 0.9, 0.9),
+      });
+
+      rowData.forEach((cell) => {
+        page.drawText(cell.text, {
+          x: cell.x,
+          y: y - 15,
+          size: 9,
+          font,
+          color: rgb(0.15, 0.15, 0.15),
+        });
+      });
+
+      y -= 22;
+    });
+
+    // Footer
+    y -= 20;
+    page.drawLine({
+      start: { x: marginX, y },
+      end: { x: 555, y },
+      thickness: 1,
+      color: rgb(0.8, 0.8, 0.8),
+    });
+
+    y -= 15;
+    page.drawText(`Total: ${data.length} data`, {
+      x: marginX,
+      y,
+      size: 10,
+      font: fontBold,
+      color: rgb(0.3, 0.3, 0.3),
+    });
+
+    // Save PDF
+    const savePath = dialog.showSaveDialogSync({
+      title: "Save Absensi PDF",
+      defaultPath: `Absensi-${filter}.pdf`,
+      filters: [{ name: "PDF File", extensions: ["pdf"] }],
+    });
+
+    if (!savePath) return false;
+
+    const pdfBytes = await pdfDoc.save();
+    fs.writeFileSync(savePath, pdfBytes);
+
+    return true;
+  } catch (err) {
+    console.error("Export PDF Error:", err);
+    return false;
+  }
 });
 
 // SEARCH MEMBER
@@ -540,6 +811,32 @@ ipcMain.on("open-external", (event, url) => {
   });
 });
 
+// ========= VOICE PLAYER (from Main Process) =============
+// Audio di-play dari main process supaya ga ke-kill saat renderer reload
+const VOICE_DIR = path.join(__dirname, "public", "assets", "voice");
+
+ipcMain.handle("voice:play", async (event, fileName) => {
+  return new Promise((resolve) => {
+    const filePath = path.join(VOICE_DIR, fileName).replace(/\\/g, "/");
+    const fileUri = `file:///${filePath}`;
+
+    const ps = [
+      `Add-Type -AssemblyName presentationCore`,
+      `$p = New-Object System.Windows.Media.MediaPlayer`,
+      `$p.Open([uri]'${fileUri}')`,
+      `$p.Play()`,
+      `Start-Sleep -Seconds 3`,
+      `$p.Close()`,
+    ].join("; ");
+
+    exec(
+      `powershell -WindowStyle Hidden -Command "${ps}"`,
+      { windowsHide: true },
+      () => resolve()
+    );
+  });
+});
+
 // Ambil total membership periode tgl 25 -> 25 berikutnya
 ipcMain.handle("membership:getTotalPeriode25", async () => {
   try {
@@ -748,6 +1045,11 @@ ipcMain.handle("membership:exportPeriode25Excel", async () => {
     console.log(error);
     return false;
   }
+});
+
+// absensi / attendanceService
+ipcMain.handle("attendance:scan", async (event, uid) => {
+  return await AttendanceService.handle(uid);
 });
 
 // ipcMain.on("open-external", (event, url) => { // kode lama

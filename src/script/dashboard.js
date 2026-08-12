@@ -166,7 +166,7 @@ async function showGrowthRateMembership() {
   // contoh: m.pay_date atau m.created_at
   const membershipBulanIni = membership.filter((m) => {
     const d = new Date(m.create_at); // <-- sesuaikan
-    console.log(d);
+    // console.log(d);
 
     return d.getMonth() + 1 === thisMonth && d.getFullYear() === thisYear;
   }).length;
